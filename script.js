@@ -67,14 +67,87 @@ let selectedPlayer = null; // player selected from pool
 // helpers
 const $ = sel => document.querySelector(sel);
 const $$ = sel => Array.from(document.querySelectorAll(sel));
-const toast = (msg) => {
-  const t = $('#toast');
-  if(!t) return;
+
+/* -------------------------
+   Robust toast implementation
+   - crea #toast si no existe
+   - fuerza reflow para asegurar animación en móviles
+   - maneja timeouts en t._timeout
+   ------------------------- */
+function ensureToastElement() {
+  let t = $('#toast');
+  if (t) return t;
+
+  t = document.createElement('div');
+  t.id = 'toast';
+  t.setAttribute('aria-live', 'polite');
+  t.setAttribute('role', 'status');
+  t.className = 'toast';
+  // minimal inline styles si no tienes la clase en CSS
+  // (si ya tienes CSS, esto no interfiere)
+  t.style.position = t.style.position || 'fixed';
+  t.style.left = t.style.left || '50%';
+  t.style.transform = t.style.transform || 'translateX(-50%)';
+  t.style.bottom = t.style.bottom || '20px';
+  t.style.padding = t.style.padding || '8px 12px';
+  t.style.borderRadius = t.style.borderRadius || '8px';
+  t.style.background = t.style.background || '#111';
+  t.style.color = t.style.color || 'white';
+  t.style.opacity = '0';
+  t.style.pointerEvents = 'none';
+  t.style.transition = 'opacity .28s ease, transform .28s ease';
+  t.style.zIndex = '9999';
+  document.body.appendChild(t);
+  return t;
+}
+
+const toast = (msg, opts = {}) => {
+  const t = ensureToastElement();
+  if (!t) {
+    // fallback: console
+    console.log('toast:', msg);
+    return;
+  }
+
+  // set text
   t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(t._timeout);
-  t._timeout = setTimeout(()=> t.classList.remove('show'), 2000);
+
+  // clear previous timeout
+  if (t._timeout) {
+    clearTimeout(t._timeout);
+    t._timeout = null;
+  }
+
+  // Ensure reflow/animation applies (mobile browsers can be wonky)
+  // remove .show if present to restart animation
+  t.classList.remove('show');
+  // small delay to ensure class removal is processed
+  requestAnimationFrame(() => {
+    // apply visible styles
+    t.style.opacity = '1';
+    t.style.pointerEvents = 'auto';
+    t.classList.add('show');
+
+    // optional translate for a subtle slide-up — only if not defined in CSS
+    // (we don't override CSS if it exists)
+    if (!t._hadInlineTranslate) {
+      t.style.transform = 'translateX(-50%) translateY(0)';
+      t._hadInlineTranslate = true;
+    }
+
+    // set timeout to hide
+    const duration = typeof opts.duration === 'number' ? opts.duration : 2000;
+    t._timeout = setTimeout(() => {
+      t.style.opacity = '0';
+      t.style.pointerEvents = 'none';
+      t.classList.remove('show');
+      t._timeout = null;
+    }, duration);
+  });
 };
+/* -------------------------
+   end toast
+   ------------------------- */
 
 // load players.json
 async function loadPlayers(){
@@ -122,19 +195,12 @@ async function loadPlayers(){
       {"id":34,"name":"Hugo","team":"Mexico","rating":10},
       {"id":35,"name":"Ricardo Espadas","team":"Mexico","rating":1},
       {"id":36,"name":"Micael","team":"España","rating":10},
-      {"id":36,"name":"Rafael","team":"España","rating":11},
-
+      {"id":37,"name":"Rafael","team":"España","rating":11}
     ];
   }
 
   // Normalize: ensure every player has a `team` property.
-  // If the JSON uses `position` instead of `team`, copy it over.
-  players = players.map(p => {
-    return {
-      ...p,
-      team: (p.team || p.position || '—')  // prefer team, fallback to position, else '—'
-    };
-  });
+  players = players.map(p => ({ ...p, team: (p.team || p.position || '—') }));
 }
 
 // persistence
@@ -421,6 +487,9 @@ function getInitials(name){
 
 // init app
 (async function(){
+  // ensure toast element exists early (fixes mobile quirks)
+  ensureToastElement();
+
   await loadPlayers();
   loadState();
   renderPlayers();
