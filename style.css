@@ -1,0 +1,63 @@
+:root{
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --accent: #1976d2;
+  --danger: #d32f2f;
+  --muted: #6b7280;
+  --radius: 12px;
+  --gap: 12px;
+  --max-width: 1100px;
+  font-family: Inter, Roboto, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:#111}
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px;max-width:var(--max-width);margin:0 auto;
+}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:44px;height:44px;object-fit:cover;border-radius:8px}
+h1{font-size:20px;margin:0}
+.controls{display:flex;align-items:center;gap:10px}
+.badge{background:#fff;padding:6px 10px;border-radius:999px;border:1px solid rgba(0,0,0,0.06);font-weight:600}
+.btn{padding:8px 12px;border-radius:8px;border:0;background:var(--accent);color:#fff;cursor:pointer;font-weight:600}
+.btn.danger{background:var(--danger)}
+
+.container{
+  max-width:var(--max-width);
+  margin:18px auto;
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:18px;
+  padding:0 16px 32px 16px;
+}
+
+section{background:var(--card);border-radius:var(--radius);padding:14px;box-shadow:0 6px 18px rgba(16,24,40,0.04)}
+section h2{margin-top:0;margin-bottom:8px;font-size:16px}
+
+.list-placeholder{min-height:80px}
+
+/* card jugador */
+.card{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;background:transparent;padding:8px;border-radius:10px;margin-bottom:8px;
+}
+.card-inner{display:flex;align-items:center;gap:12px}
+.avatar{
+  width:56px;height:56px;border-radius:10px;flex:0 0 56px;background:linear-gradient(135deg,#f0f4ff,#e8f3ff);display:flex;align-items:center;justify-content:center;font-weight:700;color:#233b6e;
+}
+.player-info{display:flex;flex-direction:column}
+.player-name{font-weight:700}
+.player-meta{font-size:12px;color:var(--muted)}
+.actions{display:flex;gap:8px;align-items:center}
+.small-btn{padding:6px 10px;border-radius:8px;border:0;background:var(--accent);color:#fff;cursor:pointer;font-weight:600}
+.small-btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(25,118,210,0.12)}
+
+.empty{color:var(--muted);padding:8px}
+
+/* responsive */
+@media (max-width:900px){
+  .container{grid-template-columns:1fr; padding:0 12px}
+}
+.footer{max-width:var(--max-width);margin:0 auto;padding:12px 16px;text-align:center;color:var(--muted)}

@@ -2,11 +2,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>My Dream Team</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>My Dream Team</h1>
+    <header class="header">
+    <div class="brand">
+      <img src="logo.png" alt="MyDreamTeam" class="logo" onerror="this.style.display='none'">
+      <h1>MyDreamTeam</h1>
+    </div>
+    <div class="controls">
+      <div id="counter" class="badge">0 / 11</div>
+      <button id="clearTeam" class="btn danger">Vaciar equipo</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="team-section">
+      <h2>Tu Alineación</h2>
+      <div id="teamList" class="list-placeholder">No hay jugadores en el equipo.</div>
+    </section>
+
+    <section class="players-section">
+      <h2>Jugadores disponibles</h2>
+      <div id="playersList" class="list-placeholder">Cargando jugadores…</div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <small>Hecho con ❤️ · MyDreamTeam</small>
+  </footer>
     <script src="script.js"></script>
 </body>
 </html>
