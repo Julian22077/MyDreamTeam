@@ -79,7 +79,7 @@ async function loadPlayers(){
     players = await r.json();
   } catch(e){
     console.error(e);
-    // fallback
+    // fallback (lista de ejemplo)
     players = [
       {"id":1,"name":"Tsubasa Ozora","team":"Japón","rating":10},
       {"id":2,"name":"Kojiro Hyuga","team":"Japón","rating":9},
@@ -163,18 +163,25 @@ function renderPlayers(){
     container.appendChild(div);
   });
 
-  // bind select buttons
+  // bind select buttons robustamente (click + touch)
   $$('.btn-small').forEach(btn => {
-    btn.onclick = () => {
+    const handler = (ev) => {
+      ev.preventDefault?.();
       const id = Number(btn.dataset.id);
       const p = players.find(x=>x.id===id);
       if(isInTeam(id)) {
-        // previously showed toast; now silent
         return;
       }
       selectedPlayer = p;
-      // previously showed toast; now silent
     };
+    // remove previous by cloning to avoid duplicate listeners
+    btn.replaceWith(btn.cloneNode(true));
+  });
+
+  // re-query and attach listeners
+  $$('.btn-small').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.preventDefault(); const id = Number(btn.dataset.id); const p = players.find(x=>x.id===id); if(!isInTeam(id)) selectedPlayer = p; }, {passive:false});
+    btn.addEventListener('touchend', (e) => { e.preventDefault(); const id = Number(btn.dataset.id); const p = players.find(x=>x.id===id); if(!isInTeam(id)) selectedPlayer = p; }, {passive:false});
   });
 }
 
@@ -197,7 +204,7 @@ function renderFormation(formationKey){
     div.appendChild(content);
 
     // click handler: assign selectedPlayer or expand / show details
-    div.onclick = (e) => {
+    div.addEventListener('click', (e) => {
       const posId = div.dataset.pos;
 
       // If user is assigning a player, do that first (keeps original behavior)
@@ -225,9 +232,8 @@ function renderFormation(formationKey){
         }
         return;
       }
-
-      // if no selected player and no player in pos, previously showed toast; now silent
-    };
+      // otherwise silent
+    }, {passive:false});
 
     // if there's a player already in this pos, show it (compact by default)
     const p = currentTeam[pos.id];
@@ -248,17 +254,38 @@ function renderFormation(formationKey){
         </div>
       `;
 
-      // make sure remove button works and doesn't propagate the click to div
+      // --- ROBUST remove button binding (works in VM, mobile, desktop) ---
+      // get the fresh button node (guaranteed to exist after innerHTML)
       const removeBtn = content.querySelector('.removeBtn');
-      removeBtn.onclick = (ev) => {
-        ev.stopPropagation();
-        if(confirm(`Quitar a ${p.name} de ${pos.label}?`)) {
+      if(removeBtn){
+        // clone to remove previous handlers if any
+        const newBtn = removeBtn.cloneNode(true);
+        removeBtn.parentNode.replaceChild(newBtn, removeBtn);
+
+        const handler = (ev) => {
+          ev.preventDefault?.();
+          ev.stopPropagation?.();
+
+          // robust confirm: try/catch in case confirm is blocked; fallback = true
+          let ok = false;
+          try {
+            ok = (typeof window.confirm === 'function') ? window.confirm(`Quitar a ${p.name} de ${pos.label}?`) : true;
+          } catch(err) {
+            ok = true;
+          }
+          if(!ok) return;
+
+          // Call remove using the pos id (this is the correct key in currentTeam)
           removePlayerFromPos(pos.id);
+          // Re-render
           renderPlayers();
           renderFormation(currentFormation);
-          // previously showed toast; now silent
-        }
-      };
+        };
+
+        newBtn.addEventListener('click', handler, {passive:false});
+        newBtn.addEventListener('touchend', handler, {passive:false});
+      }
+      // --- end remove binding ---
     } else {
       // no player: show placeholder label
       content.innerHTML = `<div class="label">${pos.label}</div>`;
@@ -280,11 +307,7 @@ function assignPlayerToPos(player, posId){
     // swap: remove from existingPos
     delete currentTeam[existingPos];
   }
-  // if the pos already had a player, put that player back to pool (delete mapping)
-  const displaced = currentTeam[posId];
-  if(displaced){
-    // just overwrite; displaced will become unassigned
-  }
+  // assign (overwrite if needed)
   currentTeam[posId] = player;
   saveState();
 }
@@ -315,10 +338,6 @@ function updateCounter(){
 // -------------------------
 /**
  * Migra el currentTeam a la nueva plantilla.
- * - Mantiene posiciones con el mismo id.
- * - Los jugadores en posiciones que no existen en la nueva plantilla
- *   se reubican en las posiciones vacantes (en orden de aparición en la plantilla).
- * - Si sobra más jugadores que plazas (raro), los dejaremos sin asignar (se quitarán).
  */
 function migrateTeamToFormation(oldTeam, newTemplate){
   const newTeam = {};
@@ -331,7 +350,7 @@ function migrateTeamToFormation(oldTeam, newTemplate){
     }
   });
 
-  // 2) Collect leftover players (that were in oldTeam but their posId not in new formation)
+  // 2) Collect leftover players
   const leftoverPlayers = [];
   Object.keys(oldTeam).forEach(oldPosId => {
     if(!slotOrder.includes(oldPosId)){
@@ -345,7 +364,6 @@ function migrateTeamToFormation(oldTeam, newTemplate){
     newTeam[ emptySlots[i] ] = leftoverPlayers[i];
   }
 
-  // Note: if leftoverPlayers.length > emptySlots.length => sobrantes quedan sin asignar
   currentTeam = newTeam;
   saveState();
   return currentTeam;
@@ -360,9 +378,8 @@ function initFormation(){
   const sel = $('#formationSelect');
   if(!sel) return;
   sel.value = currentFormation;
-  sel.onchange = () => {
+  sel.addEventListener('change', () => {
     const newFormation = sel.value;
-    // migrate currentTeam to the new formation so players don't "desaparecer"
     const newTemplate = formationTemplates[newFormation];
     if(!newTemplate) {
       currentFormation = newFormation;
@@ -373,7 +390,7 @@ function initFormation(){
     currentFormation = newFormation;
     renderPlayers(); // actualizar pool (botones)
     renderFormation(currentFormation); // render con el nuevo mapa
-  };
+  }, {passive:false});
   renderFormation(currentFormation);
 }
 
@@ -385,18 +402,24 @@ function exportLineup(){
   dl.setAttribute('href', dataStr);
   dl.setAttribute('download', 'lineup.json');
   dl.click();
-  // previously showed toast; now silent
+  // silent
 }
 
-// clear team
+// clear team (robusto: click + touch handled at init)
 function clearTeam(){
-  if(confirm('Vaciar el equipo?')){
-    currentTeam = {};
-    saveState();
-    renderPlayers();
-    renderFormation(currentFormation);
-    // previously showed toast; now silent
+  // robust confirm with fallback
+  let ok = false;
+  try {
+    ok = (typeof window.confirm === 'function') ? window.confirm('Vaciar el equipo?') : true;
+  } catch(e) {
+    ok = true;
   }
+  if(!ok) return;
+
+  currentTeam = {};
+  saveState();
+  renderPlayers();
+  renderFormation(currentFormation);
 }
 
 // initials util
@@ -413,7 +436,15 @@ function getInitials(name){
   updateCounter();
 
   const exportBtn = $('#exportBtn');
-  if(exportBtn) exportBtn.onclick = exportLineup;
+  if(exportBtn) {
+    exportBtn.addEventListener('click', (e)=>{ e.preventDefault(); exportLineup(); }, {passive:false});
+    exportBtn.addEventListener('touchend', (e)=>{ e.preventDefault(); exportLineup(); }, {passive:false});
+  }
+
+  // bind clear button robustamente
   const clearBtn = $('#clearTeam');
-  if(clearBtn) clearBtn.onclick = clearTeam;
+  if(clearBtn) {
+    clearBtn.addEventListener('click', (e)=>{ e.preventDefault(); clearTeam(); }, {passive:false});
+    clearBtn.addEventListener('touchend', (e)=>{ e.preventDefault(); clearTeam(); }, {passive:false});
+  }
 })();
