@@ -7,31 +7,38 @@
 </head>
 <body>
     <header class="header">
-    <div class="brand">
-      <img src="logo.png" alt="MyDreamTeam" class="logo" onerror="this.style.display='none'">
+    <div class="left">
       <h1>MyDreamTeam</h1>
+      <select id="formationSelect" aria-label="Seleccionar formación">
+        <option value="4-4-2">4-4-2</option>
+        <option value="4-3-3">4-3-3</option>
+        <option value="3-5-2">3-5-2</option>
+        <option value="5-3-2">5-3-2</option>
+      </select>
     </div>
-    <div class="controls">
+
+    <div class="right">
       <div id="counter" class="badge">0 / 11</div>
-      <button id="clearTeam" class="btn danger">Vaciar equipo</button>
+      <button id="exportBtn" class="btn">Exportar JSON</button>
+      <button id="clearTeam" class="btn ghost">Vaciar</button>
     </div>
   </header>
 
-  <main class="container">
-    <section class="team-section">
-      <h2>Tu Alineación</h2>
-      <div id="teamList" class="list-placeholder">No hay jugadores en el equipo.</div>
+  <main class="main">
+    <section class="pitch-section">
+      <div class="pitch" id="pitch" role="application" aria-label="Campo de juego">
+        <!-- posiciones se generan via JS -->
+      </div>
     </section>
 
-    <section class="players-section">
-      <h2>Jugadores disponibles</h2>
-      <div id="playersList" class="list-placeholder">Cargando jugadores…</div>
-    </section>
+    <aside class="sidebar">
+      <h2>Jugadores</h2>
+      <div id="playersList" class="playersList">Cargando jugadores...</div>
+    </aside>
   </main>
 
-  <footer class="footer">
-    <small>Hecho con ❤️ · MyDreamTeam</small>
-  </footer>
+  <div id="toast" class="toast" aria-live="polite"></div>
+    
     <script src="script.js"></script>
 </body>
 </html>
