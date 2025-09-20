@@ -5,6 +5,19 @@
     <title>My Dream Team</title>
     <link rel="stylesheet" href="style.css">
 </head>
+<!-- Confirm modal (agregar en el HTML) -->
+<div id="confirmModal" class="confirm-modal" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="confirm-backdrop"></div>
+  <div class="confirm-card" role="document" aria-labelledby="confirmTitle">
+    <div id="confirmTitle" class="confirm-title">Confirmar acción</div>
+    <div id="confirmMessage" class="confirm-message">¿Estás seguro?</div>
+    <div class="confirm-actions">
+      <button id="confirmCancel" class="btn btn-small ghost">Cancelar</button>
+      <button id="confirmOk" class="btn btn-small">Aceptar</button>
+    </div>
+  </div>
+</div>
+
 <body>
     <header class="header">
     <div class="left">
