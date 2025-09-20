@@ -68,86 +68,8 @@ let selectedPlayer = null; // player selected from pool
 const $ = sel => document.querySelector(sel);
 const $$ = sel => Array.from(document.querySelectorAll(sel));
 
-/* -------------------------
-   Robust toast implementation
-   - crea #toast si no existe
-   - fuerza reflow para asegurar animación en móviles
-   - maneja timeouts en t._timeout
-   ------------------------- */
-function ensureToastElement() {
-  let t = $('#toast');
-  if (t) return t;
-
-  t = document.createElement('div');
-  t.id = 'toast';
-  t.setAttribute('aria-live', 'polite');
-  t.setAttribute('role', 'status');
-  t.className = 'toast';
-  // minimal inline styles si no tienes la clase en CSS
-  // (si ya tienes CSS, esto no interfiere)
-  t.style.position = t.style.position || 'fixed';
-  t.style.left = t.style.left || '50%';
-  t.style.transform = t.style.transform || 'translateX(-50%)';
-  t.style.bottom = t.style.bottom || '20px';
-  t.style.padding = t.style.padding || '8px 12px';
-  t.style.borderRadius = t.style.borderRadius || '8px';
-  t.style.background = t.style.background || '#111';
-  t.style.color = t.style.color || 'white';
-  t.style.opacity = '0';
-  t.style.pointerEvents = 'none';
-  t.style.transition = 'opacity .28s ease, transform .28s ease';
-  t.style.zIndex = '9999';
-  document.body.appendChild(t);
-  return t;
-}
-
-const toast = (msg, opts = {}) => {
-  const t = ensureToastElement();
-  if (!t) {
-    // fallback: console
-    console.log('toast:', msg);
-    return;
-  }
-
-  // set text
-  t.textContent = msg;
-
-  // clear previous timeout
-  if (t._timeout) {
-    clearTimeout(t._timeout);
-    t._timeout = null;
-  }
-
-  // Ensure reflow/animation applies (mobile browsers can be wonky)
-  // remove .show if present to restart animation
-  t.classList.remove('show');
-  // small delay to ensure class removal is processed
-  requestAnimationFrame(() => {
-    // apply visible styles
-    t.style.opacity = '1';
-    t.style.pointerEvents = 'auto';
-    t.classList.add('show');
-
-    // optional translate for a subtle slide-up — only if not defined in CSS
-    // (we don't override CSS if it exists)
-    if (!t._hadInlineTranslate) {
-      t.style.transform = 'translateX(-50%) translateY(0)';
-      t._hadInlineTranslate = true;
-    }
-
-    // set timeout to hide
-    const duration = typeof opts.duration === 'number' ? opts.duration : 2000;
-    t._timeout = setTimeout(() => {
-      t.style.opacity = '0';
-      t.style.pointerEvents = 'none';
-      t.classList.remove('show');
-      t._timeout = null;
-    }, duration);
-  });
-};
-/* -------------------------
-   end toast
-   ------------------------- */
+// toast NO-OP: ya no muestra nada (móvil/desktop)
+const toast = () => { /* no-op */ };
 
 // load players.json
 async function loadPlayers(){
@@ -247,11 +169,11 @@ function renderPlayers(){
       const id = Number(btn.dataset.id);
       const p = players.find(x=>x.id===id);
       if(isInTeam(id)) {
-        toast('El jugador ya está en el equipo. Para moverlo, haz click en la posición donde está y luego elige otro.');
+        // previously showed toast; now silent
         return;
       }
       selectedPlayer = p;
-      toast(`Jugador seleccionado: ${p.name} → ahora haz clic en la posición en el campo`);
+      // previously showed toast; now silent
     };
   });
 }
@@ -284,7 +206,6 @@ function renderFormation(formationKey){
         selectedPlayer = null;
         renderPlayers();
         renderFormation(currentFormation); // re-render to show name
-        toast('Jugador asignado');
         return;
       }
 
@@ -305,8 +226,7 @@ function renderFormation(formationKey){
         return;
       }
 
-      // if no selected player and no player in pos, show prompt
-      toast('No hay jugador seleccionado. Haz click en un jugador a la derecha para seleccionarlo.');
+      // if no selected player and no player in pos, previously showed toast; now silent
     };
 
     // if there's a player already in this pos, show it (compact by default)
@@ -336,7 +256,7 @@ function renderFormation(formationKey){
           removePlayerFromPos(pos.id);
           renderPlayers();
           renderFormation(currentFormation);
-          toast('Jugador quitado');
+          // previously showed toast; now silent
         }
       };
     } else {
@@ -453,7 +373,6 @@ function initFormation(){
     currentFormation = newFormation;
     renderPlayers(); // actualizar pool (botones)
     renderFormation(currentFormation); // render con el nuevo mapa
-    toast(`Formación cambiada a ${currentFormation} — jugadores reubicados`);
   };
   renderFormation(currentFormation);
 }
@@ -466,7 +385,7 @@ function exportLineup(){
   dl.setAttribute('href', dataStr);
   dl.setAttribute('download', 'lineup.json');
   dl.click();
-  toast('Lineup exportado');
+  // previously showed toast; now silent
 }
 
 // clear team
@@ -476,7 +395,7 @@ function clearTeam(){
     saveState();
     renderPlayers();
     renderFormation(currentFormation);
-    toast('Equipo vaciado');
+    // previously showed toast; now silent
   }
 }
 
@@ -487,9 +406,6 @@ function getInitials(name){
 
 // init app
 (async function(){
-  // ensure toast element exists early (fixes mobile quirks)
-  ensureToastElement();
-
   await loadPlayers();
   loadState();
   renderPlayers();
