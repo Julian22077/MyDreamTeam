@@ -345,16 +345,3 @@ html,body{height:100%;margin:0;background:#e6f2ea;color:#08121a}
 .pos svg{display:block;}
 
 /* Fin del archivo CSS */
-/* Confirm modal básico (pegalo al final de tu CSS) */
-.confirm-modal { position: fixed; inset: 0; display: none; z-index: 10000; align-items: center; justify-content: center; }
-.confirm-modal[aria-hidden="false"] { display: flex; }
-.confirm-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(2px); }
-.confirm-card {
-  position: relative; z-index: 10001; width: min(92%,420px); background: white; border-radius: 12px; padding: 16px;
-  box-shadow: 0 12px 40px rgba(2,6,23,0.36); display:flex; flex-direction:column; gap:12px;
-}
-.confirm-title { font-weight:800; font-size:16px; color:#0b2f1b; }
-.confirm-message { font-size:14px; color:#334155; line-height:1.3; }
-.confirm-actions { display:flex; gap:10px; justify-content:flex-end; }
-.confirm-actions .btn-small { padding:8px 12px; border-radius:8px; }
-.confirm-actions .btn-small.ghost { background:transparent; border:1px solid rgba(0,0,0,0.06); color:#334155; }
