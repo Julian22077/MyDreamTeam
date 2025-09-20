@@ -9,6 +9,9 @@
   --pitch-green: linear-gradient(180deg,#0b6623,#0a5a1f);
 }
 
+/* ----------------------------------------------------
+   Reglas generales / reset
+   ---------------------------------------------------- */
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:#e6f2ea;color:#08121a}
 .header{
@@ -33,12 +36,19 @@ html,body{height:100%;margin:0;background:#e6f2ea;color:#08121a}
   padding:0 16px 32px;
 }
 
-/* Pitch */
+/* ----------------------------------------------------
+   Pitch / campo - ahora con aspect-ratio responsivo
+   ---------------------------------------------------- */
 .pitch-section{background:transparent}
 .pitch{
   background: var(--pitch-green);
   border-radius:16px;
   padding:18px;
+  /* preferimos aspect-ratio y width 100% para que el campo sea proporcional */
+  width:100%;
+  max-width:900px;
+  aspect-ratio: 2 / 3; /* alto / ancho relativo - ajusta si prefieres otra proporción */
+  /* Fallback para navegadores sin aspect-ratio */
   min-height:620px;
   position:relative;
   box-shadow: 0 8px 24px rgba(3,60,29,0.25);
@@ -46,10 +56,17 @@ html,body{height:100%;margin:0;background:#e6f2ea;color:#08121a}
   overflow:hidden;
 }
 
-/* Position node */
+/* ----------------------------------------------------
+   Position node (placeholder / jugador)
+   Usamos variables: --pos-w, --pos-h, --x, --y
+   ---------------------------------------------------- */
 .pos {
-  width:110px;
-  height:40px;
+  /* tamaño por defecto (se pueden sobreescribir en .pos.placeholder o media queries) */
+  --pos-w: 110px;
+  --pos-h: 40px;
+
+  width: var(--pos-w);
+  height: var(--pos-h);
   border-radius:999px;
   background:rgba(255,255,255,0.95);
   display:flex;align-items:center;justify-content:center;
@@ -61,15 +78,186 @@ html,body{height:100%;margin:0;background:#e6f2ea;color:#08121a}
   position:absolute;
   text-align:center;
   padding:6px;
+  /* Posicionamiento centrado a partir de variables --x y --y */
+  /* --x debe establecerse en JS como "50%" (con unidad); mismo para --y */
+  left: calc(var(--x, 50%) - (var(--pos-w) / 2));
+  top:  calc(var(--y, 50%) - (var(--pos-h) / 2));
+  transition: transform .18s ease, width .18s ease, height .18s ease, box-shadow .18s ease;
+  overflow: visible; /* permitimos que el contenido expandido sobresalga si es necesario */
+  z-index: 10;
 }
-.pos.placeholder{background:rgba(255,255,255,0.18);color:#fff;font-weight:600}
 
-/* Small name and remove icon inside pos */
+/* Placeholder (vacío) estilo específico */
+.pos.placeholder {
+  /* estos valores sobreescriben los de .pos si los quieres específicos */
+  --pos-w: 88px;
+  --pos-h: 36px;
+  padding: 6px 8px;
+  font-size: 13px;
+
+  background:rgba(255,255,255,0.18);
+  color:#fff;
+  font-weight:600;
+  box-shadow: none;
+}
+
+/* si hay jugador asignado (ej: .pos.assigned) podrías cambiar tamaño/color */
+.pos.assigned{
+  background:rgba(255,255,255,0.98);
+  color:#0b6623;
+  font-weight:800;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+/* small name and remove icon inside pos */
 .pos .name{font-size:14px}
 .pos .small{font-size:11px;color:rgba(0,0,0,0.6);font-weight:600;margin-left:6px}
-.pos .removeBtn{position:absolute;right:-8px;top:-8px;background:#d32f2f;color:white;border-radius:999px;padding:4px 6px;font-size:11px;border:none;display:none;cursor:pointer}
+.pos .removeBtn{
+  position:absolute;
+  right:8px;
+  top:8px;
+  background:#d32f2f;
+  color:white;
+  border-radius:999px;
+  padding:4px 6px;
+  font-size:11px;
+  border:none;
+  display:none;
+  cursor:pointer;
+  z-index: 60;
+}
 
-/* Players list */
+/* muestra el remove al hacer hover (útil en desktop) */
+.pos:hover .removeBtn{display:block;}
+
+/* ---------- PLAYER INFO INSIDE PLACEHOLDER (NUEVAS REGLAS) ---------- */
+/* Contenedor interno para nombre + meta dentro del badge */
+.pos .player-info {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--pos-w) - 12px); /* deja espacio para padding */
+  max-width: calc(var(--pos-w) - 12px);
+  padding: 0 4px;
+  box-sizing: border-box;
+  pointer-events: none; /* evitamos que el texto interrumpa clicks en el badge por defecto */
+  transition: opacity .14s ease, transform .14s ease, max-width .18s ease;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Nombre truncado en una línea (desktop) */
+.pos .player-info .pname {
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  color: inherit;
+}
+
+/* Meta o etiqueta pequeña (posición/edad etc) */
+.pos .player-info .pmeta {
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.9;
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: inherit;
+}
+
+/* Vista compacta alternativa (útil para el contenido dentro) */
+.pos .compact {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Vista completa (oculta por defecto) */
+.pos .full {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  width: calc(var(--pos-w) * 1); /* se ajusta cuando se expande */
+  padding: 8px;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  pointer-events: none; /* por defecto inactiva para clicks hasta expandir */
+  background: transparent;
+  text-align: center;
+}
+
+/* Nombre full y meta en vista completa */
+.pos .full .name-full {
+  font-weight: 800;
+  font-size: 13px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+.pos .full .small { font-size: 11px; opacity: 0.8; }
+.pos .full .meta { font-size: 11px; opacity: 0.75; }
+
+/* Asegura legibilidad cuando está asignado */
+.pos.assigned .player-info .pname { color: #0b6623; }
+
+/* ----------------------------------------------------
+   Estados expandido / interactivo
+   ---------------------------------------------------- */
+/* Clase que tu JS debe añadir para expandir una pos con jugador */
+.pos.expanded {
+  width: calc(var(--pos-w) * 1.9);   /* tamaño expandido - ajustable */
+  height: calc(var(--pos-h) * 3.0);
+  border-radius: 12px;
+  z-index: 80;
+  transform: translate(-50%, -50%) scale(1.02);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.28);
+  transition: width .18s ease, height .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+
+/* Cuando está expandida: compact se oculta, full se muestra y se habilitan eventos */
+.pos.expanded .compact { display: none; }
+.pos.expanded .full {
+  display: flex;
+  pointer-events: auto;
+  width: calc(var(--pos-w) * 1.7);
+}
+
+/* Hacemos que el contenido del badge sea interactivo al expandir */
+.pos.expanded .player-info { pointer-events: auto; max-width: calc(var(--pos-w) * 1.7); }
+
+/* Mostramos el botón eliminar cuando está expandida (o por hover) */
+.pos.expanded .removeBtn{ display:inline-block; }
+
+/* Si quieres que el remove aparezca también al pasar el mouse aunque no esté expandida */
+@media (hover: hover) {
+  .pos:not(.expanded):hover .removeBtn { display:block; }
+}
+
+/* Ajuste para que el texto dentro se pueda envolver en vista expandida */
+.pos.expanded .player-info .pname {
+  white-space: normal;
+  -webkit-line-clamp: 2;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+}
+
+/* ----------------------------------------------------
+   Lista lateral de jugadores
+   ---------------------------------------------------- */
 .sidebar{background:var(--panel);padding:12px;border-radius:12px;height:620px;overflow:auto}
 .playersList{display:flex;flex-direction:column;gap:8px}
 .player{
@@ -94,9 +282,66 @@ html,body{height:100%;margin:0;background:#e6f2ea;color:#08121a}
 }
 .toast.show{opacity:1;pointer-events:auto}
 
-/* responsive */
+/* ----------------------------------------------------
+   Reglas responsivas para placeholders y layout
+   ---------------------------------------------------- */
 @media (max-width:980px){
   .main{grid-template-columns:1fr; padding:0 12px}
   .sidebar{height:auto;max-height:360px}
-  .pitch{min-height:500px}
+  .pitch{
+    /* para pantallas medianas preferimos que el campo ocupe más alto */
+    min-height:480px;
+  }
 }
+
+/* Ajustes para tablets / móviles */
+@media (max-width:768px) {
+  .pos {
+    --pos-w: 96px;
+    --pos-h: 36px;
+    font-size:12px;
+    padding:5px 8px;
+  }
+  .pitch{max-width:720px}
+  .sidebar{max-height:340px}
+}
+
+/* Ajustes responsivos: en pantallas pequeñas reduce aún más */
+@media (max-width:520px) {
+  .pos {
+    --pos-w: 72px;
+    --pos-h: 34px;
+    font-size:12px;
+    padding:5px 6px;
+  }
+  .pitch{min-height:420px}
+  .sidebar{padding:10px}
+}
+
+/* Ajuste extra para pantallas muy pequeñas */
+@media (max-width:380px) {
+  .pos {
+    --pos-w: 60px;
+    --pos-h: 30px;
+    font-size:11px;
+    padding:4px 6px;
+  }
+  .avatar{width:40px;height:40px}
+  .pname{font-size:13px}
+  .pitch{min-height:360px}
+}
+
+/* ----------------------------------------------------
+   Pequeños detalles estéticos
+   ---------------------------------------------------- */
+.pos .label{pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pos .name{pointer-events:none}
+.player .meta{opacity:0.9}
+
+/* Mejora accesibilidad: focus visible para teclas */
+.pos:focus { outline: 3px solid rgba(30,136,229,0.16); outline-offset: 2px; }
+
+/* Si usas icons dentro, asegúrate que no se corten */
+.pos svg{display:block;}
+
+/* Fin del archivo CSS */
