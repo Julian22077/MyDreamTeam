@@ -3,6 +3,7 @@
 
 const playersJsonUrl = 'players.json';
 const MAX_PLAYERS = 11;
+const MAX_SAVE_SLOTS = 5; // máximo de espacios de guardado
 
 const formationTemplates = {
   "4-4-2": [
@@ -70,6 +71,188 @@ const $$ = sel => Array.from(document.querySelectorAll(sel));
 
 // toast NO-OP (sin notificaciones)
 const toast = () => { /* no-op */ };
+
+/* ---------------------------
+   Saved slots storage helpers
+   --------------------------- */
+const SAVED_SLOTS_KEY = 'mdt_saved_slots';
+
+function loadSavedSlotsFromStorage(){
+  const raw = localStorage.getItem(SAVED_SLOTS_KEY);
+  if(!raw) return Array(MAX_SAVE_SLOTS).fill(null);
+  try {
+    const arr = JSON.parse(raw);
+    // ensure length = MAX_SAVE_SLOTS
+    const out = Array(MAX_SAVE_SLOTS).fill(null);
+    for(let i=0;i<Math.min(arr.length,MAX_SAVE_SLOTS);i++) out[i] = arr[i];
+    return out;
+  } catch(e){
+    return Array(MAX_SAVE_SLOTS).fill(null);
+  }
+}
+
+function saveSlotsToStorage(slots){
+  localStorage.setItem(SAVED_SLOTS_KEY, JSON.stringify(slots.slice(0,MAX_SAVE_SLOTS)));
+}
+
+/* ---------------------------
+   UI: render saved slots area (inserta en sidebar si falta)
+   --------------------------- */
+function ensureSavedSlotsUI(){
+  // if there's already an element with id 'savedSlots', do nothing
+  if($('#savedSlots')) return;
+
+  const sidebar = document.querySelector('.sidebar') || document.body;
+  const wrapper = document.createElement('div');
+  wrapper.id = 'savedSlots';
+  wrapper.className = 'saved-slots';
+  wrapper.style.marginBottom = '12px';
+  wrapper.innerHTML = `<h3>Guardados</h3><div id="savedSlotsList" class="savedSlotsList" style="display:flex;flex-direction:column;gap:8px"></div><hr style="margin:12px 0 16px;border:none;border-top:1px solid rgba(0,0,0,0.06)"/>`;
+  // insert before playersList if exists
+  const playersList = $('#playersList');
+  if(playersList) playersList.parentNode.insertBefore(wrapper, playersList);
+  else sidebar.appendChild(wrapper);
+}
+
+function renderSavedSlots(){
+  ensureSavedSlotsUI();
+  const list = $('#savedSlotsList');
+  list.innerHTML = '';
+  const slots = loadSavedSlotsFromStorage();
+
+  slots.forEach((slot, idx) => {
+    const slotDiv = document.createElement('div');
+    slotDiv.className = 'save-slot';
+    slotDiv.style.display = 'flex';
+    slotDiv.style.alignItems = 'center';
+    slotDiv.style.justifyContent = 'space-between';
+    slotDiv.style.gap = '8px';
+    slotDiv.style.padding = '8px';
+    slotDiv.style.borderRadius = '8px';
+    slotDiv.style.background = 'var(--panel, #f8fafc)';
+    slotDiv.style.border = '1px solid rgba(0,0,0,0.04)';
+
+    const info = document.createElement('div');
+    info.style.flex = '1';
+    info.style.minWidth = '0';
+    if(slot){
+      const date = new Date(slot.savedAt);
+      info.innerHTML = `<div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Slot ${idx+1} — ${slot.formation}</div>
+                        <div style="font-size:12px;color:var(--muted, #6b7280)">${date.toLocaleString()}</div>`;
+    } else {
+      info.innerHTML = `<div style="font-weight:700;opacity:0.6">Slot ${idx+1} — Vacío</div>`;
+    }
+
+    const controls = document.createElement('div');
+    controls.style.display = 'flex';
+    controls.style.gap = '6px';
+
+    // Save button
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn-small';
+    saveBtn.textContent = 'Guardar';
+    saveBtn.style.padding = '6px 8px';
+    saveBtn.dataset.slot = idx;
+
+    // Load button
+    const loadBtn = document.createElement('button');
+    loadBtn.className = 'btn-small ghost';
+    loadBtn.textContent = 'Cargar';
+    loadBtn.style.padding = '6px 8px';
+    loadBtn.dataset.slot = idx;
+    // disable load if empty
+    if(!slot) loadBtn.disabled = true, loadBtn.style.opacity = '0.5';
+
+    // Delete button
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn-small ghost';
+    delBtn.textContent = 'Borrar';
+    delBtn.style.padding = '6px 8px';
+    delBtn.dataset.slot = idx;
+    if(!slot) delBtn.disabled = true, delBtn.style.opacity = '0.5';
+
+    controls.appendChild(saveBtn);
+    controls.appendChild(loadBtn);
+    controls.appendChild(delBtn);
+
+    slotDiv.appendChild(info);
+    slotDiv.appendChild(controls);
+    list.appendChild(slotDiv);
+
+    // bind actions
+    saveBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      saveSlot(idx);
+    }, {passive:false});
+
+    loadBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      loadSlot(idx);
+    }, {passive:false});
+
+    delBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      deleteSlot(idx);
+    }, {passive:false});
+  });
+}
+
+/* ---------------------------
+   Save / Load / Delete slot logic
+   --------------------------- */
+function getSlotSnapshot(){
+  // deep clone currentTeam to avoid later mutation
+  const snapshot = {};
+  Object.keys(currentTeam).forEach(k => {
+    // clone player object shallowly (should be sufficient)
+    snapshot[k] = { ...currentTeam[k] };
+  });
+  return snapshot;
+}
+
+function saveSlot(index){
+  const slots = loadSavedSlotsFromStorage();
+  const snapshot = getSlotSnapshot();
+  const data = {
+    formation: currentFormation,
+    team: snapshot,
+    savedAt: new Date().toISOString()
+  };
+  slots[index] = data;
+  saveSlotsToStorage(slots);
+  renderSavedSlots();
+  // update UI immediately
+  renderPlayers();
+  renderFormation(currentFormation);
+}
+
+function loadSlot(index){
+  const slots = loadSavedSlotsFromStorage();
+  const slot = slots[index];
+  if(!slot) return;
+  // Load into currentTeam and formation
+  currentTeam = {};
+  // shallow clone slot.team to currentTeam
+  Object.keys(slot.team || {}).forEach(k => currentTeam[k] = { ...slot.team[k] });
+  // set formation (if not supported by current app, still set)
+  currentFormation = slot.formation || currentFormation;
+  // persist lineup
+  saveState();
+  // re-render everything
+  renderPlayers();
+  renderFormation(currentFormation);
+  // update formation select value if exists
+  const sel = $('#formationSelect');
+  if(sel) sel.value = currentFormation;
+  updateCounter();
+}
+
+function deleteSlot(index){
+  const slots = loadSavedSlotsFromStorage();
+  slots[index] = null;
+  saveSlotsToStorage(slots);
+  renderSavedSlots();
+}
 
 /* ---------------------------
    Load players
@@ -412,6 +595,10 @@ function getInitials(name){
 (async function(){
   await loadPlayers();
   loadState();
+
+  // render saved slots UI first
+  renderSavedSlots();
+
   renderPlayers();
   initFormation();
   updateCounter();

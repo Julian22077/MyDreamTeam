@@ -1,13 +1,24 @@
-<html lang="en">
+<!doctype html>
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Dream Team</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>My Dream Team</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Estilos mínimos para el bloque de Saved Slots (si no quieres editar style.css) */
+    .saved-slots { margin-bottom:12px; }
+    .saved-slots h3 { margin:0 0 8px 0; font-size:14px; }
+    .savedSlotsList .save-slot { transition: box-shadow .12s ease; }
+    .savedSlotsList .save-slot:active { box-shadow: 0 6px 12px rgba(2,6,23,0.06); }
+    /* Ajustes responsivos pequeños para que el sidebar no se rompa */
+    @media (max-width:980px){
+      .saved-slots { margin-bottom:10px; }
+    }
+  </style>
 </head>
-
 <body>
-    <header class="header">
+  <header class="header">
     <div class="left">
       <h1>MyDreamTeam</h1>
       <select id="formationSelect" aria-label="Seleccionar formación">
@@ -20,7 +31,6 @@
 
     <div class="right">
       <div id="counter" class="badge">0 / 11</div>
-      <button id="exportBtn" class="btn">Exportar JSON</button>
       <button id="clearTeam" class="btn ghost">Vaciar</button>
     </div>
   </header>
@@ -33,13 +43,33 @@
     </section>
 
     <aside class="sidebar">
+      <!-- Saved slots: el script puede inyectarlo, pero lo dejamos aquí para mayor control -->
+      <div id="savedSlots" class="saved-slots" aria-label="Guardados">
+        <h3>Guardados</h3>
+        <div id="savedSlotsList" class="savedSlotsList" style="display:flex;flex-direction:column;gap:8px">
+          <!-- El JS rellenará con los 5 slots -->
+          <!-- Ejemplo (será reemplazado por renderSavedSlots()):
+          <div class="save-slot">
+            <div style="flex:1">Slot 1 — Vacío</div>
+            <div style="display:flex;gap:6px">
+              <button class="btn-small">Guardar</button>
+              <button class="btn-small ghost" disabled>Cargar</button>
+              <button class="btn-small ghost" disabled>Borrar</button>
+            </div>
+          </div>
+          -->
+        </div>
+        <hr style="margin:12px 0 16px;border:none;border-top:1px solid rgba(0,0,0,0.06)">
+      </div>
+
       <h2>Jugadores</h2>
       <div id="playersList" class="playersList">Cargando jugadores...</div>
     </aside>
   </main>
 
   <div id="toast" class="toast" aria-live="polite"></div>
-    
-    <script src="script.js"></script>
+
+  <!-- Tu script principal -->
+  <script src="script.js"></script>
 </body>
 </html>
